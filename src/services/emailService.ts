@@ -1,14 +1,32 @@
-import { transporter } from "../config/mail";
+import { mailConfig } from "../config/mail";
 import { welcomeEmailTemplate } from "../templates/welcome.template";
 
 const sendEmail = async (to: string, subject: string, html: string) => {
+    if (!mailConfig.apiKey || !mailConfig.fromEmail) {
+        console.error('Error sending email: BREVO_API_KEY or EMAIL_FROM is not set');
+        return;
+    }
+
     try {
-        await transporter.sendMail({
-            from: `"Node Auth App" <${process.env.EMAIL_USER}>`,
-            to,
-            subject,
-            html
+        const response = await fetch(mailConfig.apiUrl, {
+            method: "POST",
+            headers: {
+                "api-key": mailConfig.apiKey as string,
+                "content-type": "application/json",
+                accept: "application/json",
+            },
+            body: JSON.stringify({
+                sender: { name: mailConfig.fromName, email: mailConfig.fromEmail },
+                to: [{ email: to }],
+                subject,
+                htmlContent: html,
+            }),
         })
+
+        // fetch does not throw on 4xx/5xx, so check the status ourselves
+        if (!response.ok) {
+            console.error('Error sending email: \n', response.status, await response.text());
+        }
     } catch (error){
         console.error('Error sending email: \n', error);
     }
