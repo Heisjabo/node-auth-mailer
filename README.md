@@ -1,6 +1,6 @@
 # node-auth-mailer
 
-Minimal Express + TypeScript + MongoDB API: basic auth, password reset by email (Brevo), and admin role protection.
+Minimal Express + TypeScript + MongoDB API: basic auth, password reset by email (Mailtrap), and admin role protection.
 
 ## Setup
 
@@ -10,19 +10,22 @@ cp .env.example .env   # then fill in your values
 npm run dev
 ```
 
-## Email (Brevo)
+## Email (Mailtrap)
 
-Emails are sent with Brevo's HTTP API: one HTTPS `POST` to `https://api.brevo.com/v3/smtp/email` (see `src/services/emailService.ts`).
+Emails are sent with the official `mailtrap` client, which makes one HTTPS request per email (see `src/services/emailService.ts`).
 
 Why not SMTP? Render blocks outbound SMTP ports (25, 465, 587), so Gmail SMTP worked locally but failed in production. An HTTPS request goes out on port 443, which is never blocked.
 
+Emails go to a Mailtrap **Sandbox** inbox: they are caught there so you can view them (HTML, subject, reset code) in the Mailtrap dashboard, but they are never delivered to real inboxes. This is free and needs no domain, and any `EMAIL_FROM` works.
+
 Setup:
 
-1. Create a free account at https://www.brevo.com.
-2. Verify a sender: Senders, Domains & Dedicated IPs > Senders. Put that address in `EMAIL_FROM`.
-3. Create an API key: SMTP & API > API Keys. Put it in `BREVO_API_KEY` (the key starts with `xkeysib-`, not the SMTP key `xsmtpsib-`).
-4. Turn off IP blocking at https://app.brevo.com/security/authorised_ips (Render's IP can change, so Brevo would reject it with `unrecognised IP address`).
-5. Add the same variables in Render under Environment, then redeploy.
+1. Create a free account at https://mailtrap.io.
+2. Open Sandboxes, pick your inbox, then Integration > API. Copy the API token into `MAILTRAP_API_TOKEN` and the inbox ID into `MAILTRAP_INBOX_ID`.
+3. Optionally set `EMAIL_FROM` (defaults to `no-reply@example.com`).
+4. Add the same variables in Render under Environment, then redeploy.
+
+To deliver to real inboxes later, verify a domain under Sending Domains in Mailtrap and switch the client in `emailService.ts` from Sandbox to Sending.
 
 ## Endpoints
 
@@ -33,7 +36,11 @@ Setup:
 | GET    | /api/auth/profile           | Logged in | (Bearer token)                 |
 | POST   | /api/auth/forgot-password   | Public | email                             |
 | POST   | /api/auth/reset-password    | Public | email, code, newPassword          |
-| GET    | /api/users                  | Admin  | (Bearer token)                    |
+| GET    | /api/users?page=1&limit=10  | Admin  | (Bearer token), page and limit optional |
+| GET    | /api/users/:id              | Admin  | (Bearer token)                    |
+| POST   | /api/users                  | Admin  | name, email, password, role (optional) |
+| PATCH  | /api/users/:id              | Admin  | any of name, email, password, role |
+| DELETE | /api/users/:id              | Admin  | (Bearer token), cannot delete yourself |
 
 ## Password reset flow
 
@@ -55,12 +62,11 @@ src/
   server.ts                 starts the app after connecting to MongoDB
   app.ts                    express setup, routes, error handling
   config/db.ts              mongoose connection
-  config/mail.ts            Brevo API settings (key, sender)
   models/user.model.ts      user schema (role, reset code fields)
   utils/jwt.ts              sign / verify tokens
   middlewares/authenticate.ts   checks the token, sets req.user
   middlewares/authorize.ts      checks req.user.role
-  services/emailService.ts      sendEmail (Brevo API call), welcome email, reset code email
+  services/emailService.ts      sendEmail (Mailtrap API call), welcome email, reset code email
   templates/welcome.template.ts  HTML for the welcome email
   controllers/              request handlers
   routes/                   route definitions

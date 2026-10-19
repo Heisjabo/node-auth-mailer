@@ -27,7 +27,11 @@ export const register = async (req: Request, res: Response) => {
     password: await bcrypt.hash(password, 10),
   });
 
-  await sendWelcomeEmail(email, name);
+  try {
+    await sendWelcomeEmail(email, name);
+  } catch {
+    // A failed welcome email should not block registration.
+  }
 
   res.status(201).json({
     token: signToken({ id: user.id }),
@@ -79,7 +83,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   try {
    await sendResetCodeEmail(email, code);
   } catch (error) {
-    console.error("Failed to send reset email:", error);
+    console.error("Failed to send reset email");
     user.resetCode = undefined;
     user.resetCodeExpires = undefined;
     await user.save();

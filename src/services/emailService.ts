@@ -1,34 +1,33 @@
-import { mailConfig } from "../config/mail";
 import { welcomeEmailTemplate } from "../templates/welcome.template";
+import { MailtrapClient } from "mailtrap";
+
+// Emails go to a Mailtrap Sandbox inbox: they are caught there for viewing, never delivered.
+const mailtrap = new MailtrapClient({
+  token: process.env.MAILTRAP_API_TOKEN as string,
+  sandbox: true,
+  testInboxId: Number(process.env.MAILTRAP_INBOX_ID),
+});
+
+const sender = {
+  email: process.env.EMAIL_FROM || "no-reply@example.com",
+  name: process.env.EMAIL_FROM_NAME || "Node Auth App",
+};
 
 const sendEmail = async (to: string, subject: string, html: string) => {
-    if (!mailConfig.apiKey || !mailConfig.fromEmail) {
-        console.error('Error sending email: BREVO_API_KEY or EMAIL_FROM is not set');
-        return;
-    }
-
     try {
-        const response = await fetch(mailConfig.apiUrl, {
-            method: "POST",
-            headers: {
-                "api-key": mailConfig.apiKey as string,
-                "content-type": "application/json",
-                accept: "application/json",
-            },
-            body: JSON.stringify({
-                sender: { name: mailConfig.fromName, email: mailConfig.fromEmail },
-                to: [{ email: to }],
-                subject,
-                htmlContent: html,
-            }),
-        })
-
-        // fetch does not throw on 4xx/5xx, so check the status ourselves
-        if (!response.ok) {
-            console.error('Error sending email: \n', response.status, await response.text());
+        if (!process.env.MAILTRAP_API_TOKEN || !Number(process.env.MAILTRAP_INBOX_ID)) {
+            throw new Error("MAILTRAP_API_TOKEN and MAILTRAP_INBOX_ID must be set");
         }
-    } catch (error){
-        console.error('Error sending email: \n', error);
+        await mailtrap.send({
+            from: sender,
+            to: [{ email: to }],
+            subject,
+            html
+        })
+    } catch (error: any){
+        // Log only the message and API response; the full error includes the Authorization header.
+        console.error("Error sending email:", error?.message, error?.cause?.response?.data ?? "");
+        throw error;
     }
 }
 
