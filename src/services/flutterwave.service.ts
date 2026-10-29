@@ -23,8 +23,14 @@ const FLW_BASE_URL = "https://api.flutterwave.com/v3";
 // The shop only sells in Rwandan francs, so every payment is in RWF
 export const CURRENCY = "RWF";
 
+// Flutterwave refuses a single RWF charge above this amount
+export const MAX_CHARGE = 200000;
+
 // Our two payment methods, mapped to the names Flutterwave uses.
 // Sending only ONE option makes the Flutterwave page show only that method.
+// If the page still shows other methods, open the Flutterwave dashboard >
+// Settings > Account Settings and UNCHECK "Enable Dashboard Payment Options".
+// While it is checked, the dashboard's list of methods overrides payment_options.
 export const PAYMENT_OPTIONS = {
   card: "card",
   mobilemoney: "mobilemoneyrwanda",

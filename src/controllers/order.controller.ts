@@ -3,7 +3,7 @@ import { isValidObjectId } from "mongoose";
 import crypto from "crypto";
 import { Cart } from "../models/cart.model";
 import { Order } from "../models/order.model";
-import { createPaymentLink, CURRENCY, PAYMENT_OPTIONS, PaymentMethod } from "../services/flutterwave.service";
+import { createPaymentLink, CURRENCY, MAX_CHARGE, PAYMENT_OPTIONS, PaymentMethod } from "../services/flutterwave.service";
 
 // Body: { paymentMethod: "card" | "mobilemoney", phoneNumber? }
 // Turns the cart into a pending order and returns the Flutterwave link to pay it.
@@ -42,6 +42,12 @@ export const checkout = async (req: Request, res: Response) => {
     quantity: item.quantity,
   }));
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  if (total > MAX_CHARGE) {
+    return res.status(400).json({
+      message: `Order total must not exceed RWF ${MAX_CHARGE.toLocaleString("en-US")}. Remove some items from your cart.`,
+    });
+  }
 
   const order = await Order.create({
     user: user._id,

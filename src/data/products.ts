@@ -4,7 +4,7 @@ export const products = [
   {
     "name": "Classic Leather Backpack",
     "category": "Bags",
-    "price": 126000,
+    "price": 25000,
     "rating": 4.6,
     "stock": 12,
     "image": "https://picsum.photos/seed/backpack/600/600",
@@ -13,7 +13,7 @@ export const products = [
   {
     "name": "Wireless Noise-Cancelling Headphones",
     "category": "Electronics",
-    "price": 208600,
+    "price": 30000,
     "rating": 4.8,
     "stock": 8,
     "image": "https://picsum.photos/seed/headphones/600/600",
@@ -22,7 +22,7 @@ export const products = [
   {
     "name": "Minimalist Wrist Watch",
     "category": "Accessories",
-    "price": 83300,
+    "price": 15000,
     "rating": 4.3,
     "stock": 20,
     "image": "https://picsum.photos/seed/watch/600/600",
@@ -31,7 +31,7 @@ export const products = [
   {
     "name": "Ceramic Coffee Mug Set",
     "category": "Home",
-    "price": 35000,
+    "price": 8000,
     "rating": 4.5,
     "stock": 35,
     "image": "https://picsum.photos/seed/mugs/600/600",
@@ -40,7 +40,7 @@ export const products = [
   {
     "name": "Running Sneakers",
     "category": "Shoes",
-    "price": 166600,
+    "price": 22000,
     "rating": 4.7,
     "stock": 15,
     "image": "https://picsum.photos/seed/sneakers/600/600",
@@ -49,7 +49,7 @@ export const products = [
   {
     "name": "Bluetooth Speaker",
     "category": "Electronics",
-    "price": 63000,
+    "price": 12000,
     "rating": 4.2,
     "stock": 25,
     "image": "https://picsum.photos/seed/speaker/600/600",
@@ -58,7 +58,7 @@ export const products = [
   {
     "name": "Cotton Crew T-Shirt",
     "category": "Clothing",
-    "price": 28000,
+    "price": 5000,
     "rating": 4.1,
     "stock": 50,
     "image": "https://picsum.photos/seed/tshirt/600/600",
@@ -67,7 +67,7 @@ export const products = [
   {
     "name": "Polarized Sunglasses",
     "category": "Accessories",
-    "price": 54600,
+    "price": 9000,
     "rating": 4.4,
     "stock": 18,
     "image": "https://picsum.photos/seed/sunglasses/600/600",
@@ -76,7 +76,7 @@ export const products = [
   {
     "name": "Scented Soy Candle",
     "category": "Home",
-    "price": 23100,
+    "price": 4000,
     "rating": 4.6,
     "stock": 40,
     "image": "https://picsum.photos/seed/candle/600/600",
@@ -85,7 +85,7 @@ export const products = [
   {
     "name": "Denim Jacket",
     "category": "Clothing",
-    "price": 105000,
+    "price": 18000,
     "rating": 4.5,
     "stock": 10,
     "image": "https://picsum.photos/seed/denim/600/600",
@@ -94,7 +94,7 @@ export const products = [
   {
     "name": "Canvas Tote Bag",
     "category": "Bags",
-    "price": 30800,
+    "price": 6000,
     "rating": 4,
     "stock": 30,
     "image": "https://picsum.photos/seed/tote/600/600",
@@ -103,7 +103,7 @@ export const products = [
   {
     "name": "Leather Chelsea Boots",
     "category": "Shoes",
-    "price": 194600,
+    "price": 28000,
     "rating": 4.7,
     "stock": 6,
     "image": "https://picsum.photos/seed/boots/600/600",
