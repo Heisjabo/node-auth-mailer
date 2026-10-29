@@ -1,12 +1,13 @@
 # node-auth-mailer
 
-Minimal Express + TypeScript + MongoDB API: basic auth, password reset by email (Mailtrap), and admin role protection.
+Minimal Express + TypeScript + MongoDB API: basic auth, password reset by email (Mailtrap), admin role protection, and a small shop (products, cart, orders) paid with the Flutterwave sandbox by card or mobile money.
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env   # then fill in your values
+npm run seed           # loads the products from src/data/products.ts (replaces existing ones)
 npm run dev
 ```
 
@@ -27,6 +28,25 @@ Setup:
 
 To deliver to real inboxes later, verify a domain under Sending Domains in Mailtrap and switch the client in `emailService.ts` from Sandbox to Sending.
 
+## Payments (Flutterwave sandbox)
+
+The whole payment flow is 3 steps. The code is in `src/services/flutterwave.service.ts` (talks to Flutterwave), `src/controllers/order.controller.ts` (step 1) and `src/controllers/payment.controller.ts` (step 3).
+
+1. **Create a payment link.** The frontend calls `POST /api/orders/checkout` with `paymentMethod` set to `card` or `mobilemoney`. The backend turns the cart into a `pending` order, using prices from the database (never from the request), and asks Flutterwave for a payment link. It sends `payment_options: "card"` or `payment_options: "mobilemoneyrwanda"`, so Flutterwave's page shows **only** the chosen method.
+2. **The customer pays on Flutterwave.** The frontend redirects to the link. Card numbers and PINs are typed on Flutterwave's page, never on ours. Flutterwave then sends the browser back to `FRONTEND_URL/payment/callback?status=...&tx_ref=...&transaction_id=...`.
+3. **Verify.** The frontend passes those values to `GET /api/payments/verify`. A URL can be faked, so the backend asks Flutterwave for the transaction and checks 4 things: status is `successful`, `tx_ref` matches the order, the amount covers the total, and the currency matches. Only then is the order marked `paid`, stock is reduced and the cart is emptied.
+
+Setup:
+
+1. Create a free account at https://app.flutterwave.com and switch to **Test mode**.
+2. Settings > API Keys: copy the test secret key (`FLWSECK_TEST-...`) into `FLW_SECRET_KEY`. Keep it on the backend only.
+3. `FLW_CURRENCY` defaults to `RWF` (product prices are in RWF). `FRONTEND_URL` defaults to `http://localhost:5173`.
+
+Test details for the sandbox page (from Flutterwave's testing docs):
+
+- Card: `5531 8866 5214 2950`, CVV `564`, expiry `09/32`, PIN `3310`, OTP `12345`.
+- Mobile money: any phone number works in test mode, follow the instructions on the Flutterwave page. Check Flutterwave's docs (Testing helpers) if their test values change.
+
 ## Endpoints
 
 | Method | Route                       | Access | Body                              |
@@ -41,6 +61,17 @@ To deliver to real inboxes later, verify a domain under Sending Domains in Mailt
 | POST   | /api/users                  | Admin  | name, email, password, role (optional) |
 | PATCH  | /api/users/:id              | Admin  | any of name, email, password, role |
 | DELETE | /api/users/:id              | Admin  | (Bearer token), cannot delete yourself |
+| GET    | /api/products               | Public |                                   |
+| GET    | /api/products/:id           | Public |                                   |
+| GET    | /api/cart                   | Logged in | returns { cart: { items, total } } |
+| POST   | /api/cart/items             | Logged in | productId, quantity (default 1), adds to the cart |
+| PATCH  | /api/cart/items/:productId  | Logged in | quantity (0 removes the item)   |
+| DELETE | /api/cart/items/:productId  | Logged in |                                 |
+| DELETE | /api/cart                   | Logged in | empties the cart                |
+| POST   | /api/orders/checkout        | Logged in | paymentMethod (card or mobilemoney), phoneNumber (mobile money); returns { order, paymentLink } |
+| GET    | /api/orders                 | Logged in | your orders, newest first       |
+| GET    | /api/orders/:id             | Logged in | one of your orders              |
+| GET    | /api/payments/verify        | Logged in | tx_ref, transaction_id, status (query, copied from the Flutterwave redirect) |
 
 ## Password reset flow
 
@@ -63,10 +94,16 @@ src/
   app.ts                    express setup, routes, error handling
   config/db.ts              mongoose connection
   models/user.model.ts      user schema (role, reset code fields)
+  models/product.model.ts   product schema (price in RWF, stock)
+  models/cart.model.ts      one cart per user: product + quantity
+  models/order.model.ts     order snapshot, payment method, status, tx_ref
+  data/products.ts          starting products, loaded by npm run seed
+  scripts/seedProducts.ts   the seed script
   utils/jwt.ts              sign / verify tokens
   middlewares/authenticate.ts   checks the token, sets req.user
   middlewares/authorize.ts      checks req.user.role
   services/emailService.ts      sendEmail (Mailtrap API call), welcome email, reset code email
+  services/flutterwave.service.ts  create a payment link, verify a transaction
   templates/welcome.template.ts  HTML for the welcome email
   controllers/              request handlers
   routes/                   route definitions
