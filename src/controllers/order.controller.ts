@@ -3,9 +3,7 @@ import { isValidObjectId } from "mongoose";
 import crypto from "crypto";
 import { Cart } from "../models/cart.model";
 import { Order } from "../models/order.model";
-import { createPaymentLink, PAYMENT_OPTIONS, PaymentMethod } from "../services/flutterwave.service";
-
-const CURRENCY = process.env.FLW_CURRENCY || "RWF";
+import { createPaymentLink, CURRENCY, PAYMENT_OPTIONS, PaymentMethod } from "../services/flutterwave.service";
 
 // Body: { paymentMethod: "card" | "mobilemoney", phoneNumber? }
 // Turns the cart into a pending order and returns the Flutterwave link to pay it.
@@ -59,7 +57,6 @@ export const checkout = async (req: Request, res: Response) => {
     const paymentLink = await createPaymentLink({
       txRef: order.txRef,
       amount: order.total,
-      currency: order.currency,
       paymentMethod: paymentMethod as PaymentMethod,
       customer: { email: user.email, name: user.name, phoneNumber },
     });

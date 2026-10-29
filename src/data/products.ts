@@ -1,5 +1,5 @@
 // Starting products for the shop. Run `npm run seed` to copy them into MongoDB.
-// Prices are in Rwandan francs (RWF), the currency Flutterwave charges in (see FLW_CURRENCY).
+// Prices are in Rwandan francs (RWF), the only currency the shop and Flutterwave payments use.
 export const products = [
   {
     "name": "Classic Leather Backpack",

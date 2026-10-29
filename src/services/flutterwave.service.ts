@@ -20,9 +20,11 @@
 
 const FLW_BASE_URL = "https://api.flutterwave.com/v3";
 
+// The shop only sells in Rwandan francs, so every payment is in RWF
+export const CURRENCY = "RWF";
+
 // Our two payment methods, mapped to the names Flutterwave uses.
 // Sending only ONE option makes the Flutterwave page show only that method.
-// For other countries swap "mobilemoneyrwanda" (e.g. "mobilemoneyuganda" with UGX).
 export const PAYMENT_OPTIONS = {
   card: "card",
   mobilemoney: "mobilemoneyrwanda",
@@ -59,7 +61,6 @@ const flutterwaveRequest = async (path: string, options: RequestInit = {}) => {
 interface CreatePaymentLinkInput {
   txRef: string;
   amount: number;
-  currency: string;
   paymentMethod: PaymentMethod;
   customer: { email: string; name: string; phoneNumber?: string };
 }
@@ -73,7 +74,7 @@ export const createPaymentLink = async (input: CreatePaymentLinkInput): Promise<
     body: JSON.stringify({
       tx_ref: input.txRef,
       amount: input.amount,
-      currency: input.currency,
+      currency: CURRENCY,
       payment_options: PAYMENT_OPTIONS[input.paymentMethod],
       redirect_url: `${frontendUrl}/payment/callback`,
       customer: {

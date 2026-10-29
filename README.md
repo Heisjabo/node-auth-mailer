@@ -34,13 +34,13 @@ The whole payment flow is 3 steps. The code is in `src/services/flutterwave.serv
 
 1. **Create a payment link.** The frontend calls `POST /api/orders/checkout` with `paymentMethod` set to `card` or `mobilemoney`. The backend turns the cart into a `pending` order, using prices from the database (never from the request), and asks Flutterwave for a payment link. It sends `payment_options: "card"` or `payment_options: "mobilemoneyrwanda"`, so Flutterwave's page shows **only** the chosen method.
 2. **The customer pays on Flutterwave.** The frontend redirects to the link. Card numbers and PINs are typed on Flutterwave's page, never on ours. Flutterwave then sends the browser back to `FRONTEND_URL/payment/callback?status=...&tx_ref=...&transaction_id=...`.
-3. **Verify.** The frontend passes those values to `GET /api/payments/verify`. A URL can be faked, so the backend asks Flutterwave for the transaction and checks 4 things: status is `successful`, `tx_ref` matches the order, the amount covers the total, and the currency matches. Only then is the order marked `paid`, stock is reduced and the cart is emptied.
+3. **Verify.** The frontend passes those values to `GET /api/payments/verify`. A URL can be faked, so the backend asks Flutterwave for the transaction and checks 4 things: status is `successful`, `tx_ref` matches the order, the amount covers the total, and the currency is `RWF`. Only then is the order marked `paid`, stock is reduced and the cart is emptied.
 
 Setup:
 
 1. Create a free account at https://app.flutterwave.com and switch to **Test mode**.
 2. Settings > API Keys: copy the test secret key (`FLWSECK_TEST-...`) into `FLW_SECRET_KEY`. Keep it on the backend only.
-3. `FLW_CURRENCY` defaults to `RWF` (product prices are in RWF). `FRONTEND_URL` defaults to `http://localhost:5173`.
+3. Everything is in Rwandan francs: product prices are stored in RWF and every Flutterwave payment is charged in RWF. `FRONTEND_URL` defaults to `http://localhost:5173`.
 
 Test details for the sandbox page (from Flutterwave's testing docs):
 
