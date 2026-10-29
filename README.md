@@ -42,7 +42,8 @@ Setup:
 2. Settings > API Keys:
    - Copy the test **secret** key (`FLWSECK_TEST-...`) into this backend's `.env` as `FLW_SECRET_KEY`. Keep it on the backend only.
    - Copy the test **public** key (`FLWPUBK_TEST-...`) into the React app's `.env` as `VITE_FLW_PUBLIC_KEY`. It is safe in the browser: it can only open the popup.
-3. Everything is in Rwandan francs: product prices are stored in RWF and every payment is charged in RWF.
+3. In Settings > Account Settings, **uncheck "Enable Dashboard Payment Options"**. While it is checked, the dashboard's list of methods overrides `payment_options`, and choosing card also shows mobile money and other methods.
+4. Everything is in Rwandan francs: product prices are stored in RWF and every payment is charged in RWF.
 
 Test details for the sandbox page (from Flutterwave's testing docs):
 

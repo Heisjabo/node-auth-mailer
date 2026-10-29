@@ -29,6 +29,8 @@ export const MAX_CHARGE = 200000;
 
 // Our two payment methods, mapped to the names Flutterwave uses.
 // Sending only ONE option makes the popup show only that method.
+// This only works if the dashboard does not override it: in the Flutterwave dashboard >
+// Settings > Account Settings, UNCHECK "Enable Dashboard Payment Options".
 export const PAYMENT_OPTIONS = {
   card: "card",
   mobilemoney: "mobilemoneyrwanda",
