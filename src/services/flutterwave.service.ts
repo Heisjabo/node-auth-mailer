@@ -1,22 +1,23 @@
-// Flutterwave "Standard" checkout, explained in 3 steps:
+// Flutterwave "Inline" checkout, explained in 3 steps:
 //
-//   1. CREATE A PAYMENT LINK (backend -> Flutterwave)
-//      We tell Flutterwave: "charge this customer X RWF, by card (or mobile money),
-//      and send them back to this URL when done". Flutterwave answers with a link.
+//   1. PREPARE THE PAYMENT (frontend -> our backend)
+//      The backend creates a pending order and decides the amount, currency and
+//      payment method, then sends them back to the frontend (see order.controller.ts).
 //
 //   2. THE CUSTOMER PAYS (browser -> Flutterwave)
-//      The frontend sends the customer to that link. They type their card or phone
-//      number on Flutterwave's own page, so card details never touch our server.
-//      Afterwards Flutterwave redirects them to our redirect_url with
-//      ?status=...&tx_ref=...&transaction_id=... in the address bar.
+//      The frontend opens Flutterwave's payment popup with the PUBLIC key.
+//      payment_options "card" shows only the card form, "mobilemoneyrwanda" shows
+//      only mobile money. Card numbers and phone numbers are typed inside the popup,
+//      so they never touch our server. When done, the popup gives the frontend a
+//      transaction_id.
 //
 //   3. VERIFY THE PAYMENT (backend -> Flutterwave)
-//      Anyone can type "?status=successful" in a URL, so we never trust it.
-//      We ask Flutterwave directly: "is transaction 123 really paid, and for how much?"
-//      Only then do we mark the order as paid.
+//      The frontend could lie ("it was paid!"), so we never trust it.
+//      We ask Flutterwave directly with the SECRET key: "is transaction 123 really
+//      paid, and for how much?" Only then do we mark the order as paid.
 //
-// Sandbox: with a TEST secret key (FLWSECK_TEST-...) no real money moves.
-// Get it at https://app.flutterwave.com > Settings > API Keys (with test mode on).
+// Sandbox: with TEST keys (FLWPUBK_TEST-... and FLWSECK_TEST-...) no real money moves.
+// Get them at https://app.flutterwave.com > Settings > API Keys (with test mode on).
 
 const FLW_BASE_URL = "https://api.flutterwave.com/v3";
 
@@ -27,10 +28,7 @@ export const CURRENCY = "RWF";
 export const MAX_CHARGE = 200000;
 
 // Our two payment methods, mapped to the names Flutterwave uses.
-// Sending only ONE option makes the Flutterwave page show only that method.
-// If the page still shows other methods, open the Flutterwave dashboard >
-// Settings > Account Settings and UNCHECK "Enable Dashboard Payment Options".
-// While it is checked, the dashboard's list of methods overrides payment_options.
+// Sending only ONE option makes the popup show only that method.
 export const PAYMENT_OPTIONS = {
   card: "card",
   mobilemoney: "mobilemoneyrwanda",
@@ -38,20 +36,17 @@ export const PAYMENT_OPTIONS = {
 
 export type PaymentMethod = keyof typeof PAYMENT_OPTIONS;
 
-// Every request needs the secret key in the Authorization header.
-// It must stay on the backend: anyone holding it can act as your business.
-const flutterwaveRequest = async (path: string, options: RequestInit = {}) => {
+// Step 3: asks Flutterwave for the real state of a payment.
+// Returns status ("successful", "failed", ...), amount, currency and tx_ref.
+// The secret key must stay on the backend: anyone holding it can act as your business.
+export const verifyTransaction = async (transactionId: string) => {
   const secretKey = process.env.FLW_SECRET_KEY;
   if (!secretKey) {
     throw new Error("FLW_SECRET_KEY must be set");
   }
 
-  const response = await fetch(`${FLW_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${secretKey}`,
-      "Content-Type": "application/json",
-    },
+  const response = await fetch(`${FLW_BASE_URL}/transactions/${encodeURIComponent(transactionId)}/verify`, {
+    headers: { Authorization: `Bearer ${secretKey}` },
   });
 
   const data = await response.json();
@@ -62,44 +57,4 @@ const flutterwaveRequest = async (path: string, options: RequestInit = {}) => {
   }
 
   return data.data;
-};
-
-interface CreatePaymentLinkInput {
-  txRef: string;
-  amount: number;
-  paymentMethod: PaymentMethod;
-  customer: { email: string; name: string; phoneNumber?: string };
-}
-
-// Step 1: returns the URL of Flutterwave's payment page
-export const createPaymentLink = async (input: CreatePaymentLinkInput): Promise<string> => {
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-
-  const data = await flutterwaveRequest("/payments", {
-    method: "POST",
-    body: JSON.stringify({
-      tx_ref: input.txRef,
-      amount: input.amount,
-      currency: CURRENCY,
-      payment_options: PAYMENT_OPTIONS[input.paymentMethod],
-      redirect_url: `${frontendUrl}/payment/callback`,
-      customer: {
-        email: input.customer.email,
-        name: input.customer.name,
-        phonenumber: input.customer.phoneNumber,
-      },
-      customizations: {
-        title: "ShopEase",
-        description: `Payment for order ${input.txRef}`,
-      },
-    }),
-  });
-
-  return data.link;
-};
-
-// Step 3: asks Flutterwave for the real state of a payment.
-// Returns status ("successful", "failed", ...), amount, currency and tx_ref.
-export const verifyTransaction = async (transactionId: string) => {
-  return flutterwaveRequest(`/transactions/${encodeURIComponent(transactionId)}/verify`);
 };

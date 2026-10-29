@@ -3,20 +3,18 @@ import { isValidObjectId } from "mongoose";
 import crypto from "crypto";
 import { Cart } from "../models/cart.model";
 import { Order } from "../models/order.model";
-import { createPaymentLink, CURRENCY, MAX_CHARGE, PAYMENT_OPTIONS, PaymentMethod } from "../services/flutterwave.service";
+import { CURRENCY, MAX_CHARGE, PAYMENT_OPTIONS, PaymentMethod } from "../services/flutterwave.service";
 
-// Body: { paymentMethod: "card" | "mobilemoney", phoneNumber? }
-// Turns the cart into a pending order and returns the Flutterwave link to pay it.
-// The cart is only emptied once the payment is verified (see payment.controller.ts).
+// Body: { paymentMethod: "card" | "mobilemoney" }
+// Turns the cart into a pending order and returns what the frontend needs to open
+// the Flutterwave popup. The cart is only emptied once the payment is verified
+// (see payment.controller.ts).
 export const checkout = async (req: Request, res: Response) => {
-  const { paymentMethod, phoneNumber } = req.body;
+  const { paymentMethod } = req.body;
   const user = req.user!;
 
   if (!Object.keys(PAYMENT_OPTIONS).includes(paymentMethod)) {
     return res.status(400).json({ message: "paymentMethod must be card or mobilemoney" });
-  }
-  if (paymentMethod === "mobilemoney" && !phoneNumber) {
-    return res.status(400).json({ message: "phoneNumber is required for mobile money" });
   }
 
   const cart = await Cart.findOne({ user: user._id }).populate("items.product");
@@ -59,21 +57,18 @@ export const checkout = async (req: Request, res: Response) => {
     txRef: `shopease-${crypto.randomUUID()}`,
   });
 
-  try {
-    const paymentLink = await createPaymentLink({
-      txRef: order.txRef,
+  // The amount comes from the order we just saved, so the frontend cannot change it.
+  // (Even if someone edits it in the browser, verification checks the paid amount.)
+  res.status(201).json({
+    order,
+    payment: {
+      tx_ref: order.txRef,
       amount: order.total,
-      paymentMethod: paymentMethod as PaymentMethod,
-      customer: { email: user.email, name: user.name, phoneNumber },
-    });
-
-    res.status(201).json({ order, paymentLink });
-  } catch (error: any) {
-    console.error("Could not create Flutterwave payment:", error.message);
-    order.status = "failed";
-    await order.save();
-    res.status(502).json({ message: "Could not start the payment, try again later" });
-  }
+      currency: order.currency,
+      payment_options: PAYMENT_OPTIONS[paymentMethod as PaymentMethod],
+      customer: { email: user.email, name: user.name },
+    },
+  });
 };
 
 export const getMyOrders = async (req: Request, res: Response) => {
